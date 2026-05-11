@@ -142,7 +142,7 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## Support
 
-For issues, questions, or feedback, please open an issue on [GitHub](https://github.com/aniksaha/plugent).
+For issues, questions, or feedback, please open an issue on [GitHub](https://github.com/Anik422/plugent).
 
 ---
 

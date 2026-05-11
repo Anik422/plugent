@@ -28,8 +28,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aniksaha/plugent"
-Repository = "https://github.com/aniksaha/plugent"
+Homepage = "https://github.com/Anik422/plugent"
+Repository = "https://github.com/Anik422/plugent"
 
 [tool.hatch.build.targets.wheel]
 packages = ["plugent"]
