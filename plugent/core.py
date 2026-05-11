@@ -62,8 +62,8 @@ class Plugent:
     def __init__(
         self,
         groq_api_key: str,
-        model: str,
         postgres_url: str,
+        model: str = None,
         vector_store_path: str = "./plugent_store",
         schedule_interval: int = 60,
         batch_size: int = 100,
@@ -74,6 +74,7 @@ class Plugent:
         Args:
             groq_api_key: Groq API key for LLM responses.
             postgres_url: PostgreSQL connection URL.
+            model: Groq model name to use for responses.
             vector_store_path: Path to save/load vector store.
             schedule_interval: Seconds between DB change checks.
             batch_size: Rows to embed at a time.
