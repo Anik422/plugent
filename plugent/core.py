@@ -1,13 +1,57 @@
 """Main core module for plugent."""
 
-from sqlalchemy import create_engine
 
-from .db_reader import read_all_rows
-from .embedder import embed_texts
-from .scheduler import ChangeScheduler
-from .retriever import retrieve
-from .responder import get_answer
-from .vector_store import VectorStore
+def _missing_dependency(name: str):
+    def _raise(*args, **kwargs):
+        raise ImportError(
+            f"{name} is unavailable because an optional plugent dependency is missing."
+        )
+
+    return _raise
+
+
+try:
+    from sqlalchemy import create_engine
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    create_engine = _missing_dependency("sqlalchemy.create_engine")
+
+try:
+    from .db_reader import read_all_rows
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    read_all_rows = _missing_dependency("plugent.db_reader.read_all_rows")
+
+try:
+    from .embedder import embed_texts
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    embed_texts = _missing_dependency("plugent.embedder.embed_texts")
+
+try:
+    from .scheduler import ChangeScheduler
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    class ChangeScheduler:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "plugent.scheduler.ChangeScheduler is unavailable because an optional plugent dependency is missing."
+            )
+
+try:
+    from .retriever import retrieve
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    retrieve = _missing_dependency("plugent.retriever.retrieve")
+
+try:
+    from .responder import get_answer
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    get_answer = _missing_dependency("plugent.responder.get_answer")
+
+try:
+    from .vector_store import VectorStore
+except ImportError:  # pragma: no cover - exercised only when dependency is absent
+    class VectorStore:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "plugent.vector_store.VectorStore is unavailable because an optional plugent dependency is missing."
+            )
 
 
 class Plugent:
@@ -79,7 +123,10 @@ class Plugent:
         Returns:
             Answer string from LLM.
         """
-        from . import embedder as emb_module
+        try:
+            from . import embedder as emb_module
+        except ImportError:
+            emb_module = None
 
         context_chunks = retrieve(
             question=question,
