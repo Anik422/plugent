@@ -1,6 +1,7 @@
 """Text embedding module."""
 
 import gc
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -9,6 +10,7 @@ from tqdm import tqdm
 
 
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+CACHE_DIR = str(Path.home() / ".cache" / "fastembed")
 _model: Optional[TextEmbedding] = None
 
 
@@ -16,7 +18,10 @@ def _get_model() -> TextEmbedding:
     global _model
 
     if _model is None:
-        _model = TextEmbedding(DEFAULT_EMBEDDING_MODEL)
+        _model = TextEmbedding(
+            model_name=DEFAULT_EMBEDDING_MODEL,
+            cache_dir=CACHE_DIR
+        )
 
     return _model
 
@@ -82,8 +87,5 @@ class Embedder:
         Returns:
             Numpy array of embeddings.
         """
-        if self._model is None:
-            self._model = TextEmbedding(self.model_name)
-
-        vectors = list(self._model.embed(texts))
+        vectors = list(_get_model().embed(texts))
         return np.array(vectors)
