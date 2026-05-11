@@ -40,3 +40,9 @@ htmlcov/
 # Environment
 .env
 .env.local
+
+# Local test file
+test_real_project.py
+
+# Vector store
+plugent_store/
