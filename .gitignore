@@ -20,7 +20,6 @@ wheels/
 .installed.cfg
 *.egg
 
-
 # Virtual environments
 venv/
 env/
@@ -31,20 +30,13 @@ ENV/
 .idea/
 *.swp
 *.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Environment
 .env
-
-# Database
-*.db
-*.sqlite
-
-# ChromaDB
-chroma_data/
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+.env.local
