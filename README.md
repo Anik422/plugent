@@ -69,7 +69,7 @@ plugent.stop()
 Plugent operates through three main components:
 
 1. **Database Reader** — Connects to PostgreSQL and reads table schemas and data
-2. **Embedder** — Converts database rows and user queries into vector embeddings using sentence-transformers
+2. **Embedder** — Converts database rows and user queries into vector embeddings using fastembed
 3. **Vector Store** — Maintains a FAISS index for fast semantic search and retrieval
 
 ### Workflow
@@ -77,7 +77,7 @@ Plugent operates through three main components:
 1. **Initialization (`start()`)** 
    - Connects to your PostgreSQL database
    - Reads all tables and rows
-   - Generates embeddings for each row using sentence-transformers
+   - Generates embeddings for each row using fastembed (BAAI/bge-small-en-v1.5)
    - Builds a FAISS vector index
    - Saves the vector store to disk for reuse
    - Starts a background scheduler for continuous updates

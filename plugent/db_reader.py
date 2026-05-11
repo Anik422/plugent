@@ -1,42 +1,42 @@
 """Database reader module."""
 
 import hashlib
-from typing import Any
 
-from sqlalchemy import create_engine, inspect, MetaData, Table
+from sqlalchemy import MetaData, Table, inspect, select
 
 
-def read_all_rows(engine) -> list[dict]:
-    """Read all rows from all tables in the database.
+def read_all_rows(engine, max_rows=None):
+    """Read rows from all tables in the database.
 
     Args:
         engine: SQLAlchemy engine connected to PostgreSQL.
+        max_rows: Optional per-table row limit.
 
-    Returns:
-        List of dicts with keys: table, row_id, content, hash.
+    Yields:
+        Dicts with keys: table, row_id, content, hash.
     """
     inspector = inspect(engine)
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
-    results = []
-
     for table_name in inspector.get_table_names():
         table = Table(table_name, metadata, autoload_with=engine)
+        query = select(table)
+        if max_rows is not None:
+            query = query.limit(max_rows)
+
         with engine.connect() as conn:
-            for row in conn.execute(table.select()):
+            for row in conn.execute(query):
                 row_dict = dict(row._mapping)
-                row_id = row_dict.get("id") or row_dict.get("id") or row_dict.get("pk")
+                row_id = row_dict.get("id") or row_dict.get("pk")
                 content = ", ".join(f"{k}: {v}" for k, v in row_dict.items())
                 content_hash = hashlib.md5(content.encode()).hexdigest()
-                results.append({
+                yield {
                     "table": table_name,
                     "row_id": row_id,
                     "content": content,
                     "hash": content_hash,
-                })
-
-    return results
+                }
 
 
 def get_row_hashes(engine) -> dict[str, str]:

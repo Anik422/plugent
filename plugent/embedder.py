@@ -1,9 +1,11 @@
 """Text embedding module."""
 
+import gc
 from typing import Optional
 
 import numpy as np
 from fastembed import TextEmbedding
+from tqdm import tqdm
 
 
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
@@ -19,17 +21,38 @@ def _get_model() -> TextEmbedding:
     return _model
 
 
-def embed_texts(texts: list[str]) -> np.ndarray:
+def embed_texts(texts: list[str], batch_size: int = 100) -> np.ndarray:
     """Generate embeddings for a list of texts.
 
     Args:
         texts: List of text strings to embed.
+        batch_size: Number of texts to embed per batch.
 
     Returns:
         Numpy array of shape (len(texts), embedding_dim).
     """
-    vectors = list(_get_model().embed(texts))
-    return np.array(vectors)
+    if not texts:
+        return np.array([])
+
+    all_vectors = []
+
+    with tqdm(
+        total=len(texts),
+        desc="Building vector store...",
+        unit="rows",
+        dynamic_ncols=True,
+        bar_format="{desc} {bar} {percentage:3.0f}% | {n_fmt}/{total_fmt} rows | {elapsed}",
+    ) as progress_bar:
+        for batch_start in range(0, len(texts), batch_size):
+            batch_texts = texts[batch_start:batch_start + batch_size]
+            batch_vectors = list(_get_model().embed(batch_texts))
+            all_vectors.extend(batch_vectors)
+            progress_bar.update(len(batch_texts))
+            del batch_texts
+            del batch_vectors
+            gc.collect()
+
+    return np.array(all_vectors)
 
 
 class Embedder:

@@ -71,8 +71,10 @@ class ChangeScheduler:
 
         # Handle new/changed rows
         if new_or_changed_ids:
-            rows = read_all_rows(self.engine)
-            rows_to_update = [r for r in rows if r["row_id"] in new_or_changed_ids]
+            rows_to_update = []
+            for row in read_all_rows(self.engine):
+                if row["row_id"] in new_or_changed_ids:
+                    rows_to_update.append(row)
 
             if rows_to_update:
                 contents = [r["content"] for r in rows_to_update]

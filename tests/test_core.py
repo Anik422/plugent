@@ -31,10 +31,10 @@ class TestPlugent:
         self, mock_scheduler, mock_vector_store, mock_embed, mock_read, mock_engine
     ):
         """Test that start() calls db_reader and embedder functions."""
-        mock_read.return_value = [
+        mock_read.return_value = iter([
             {"row_id": 1, "table": "users", "content": "name: alice", "hash": "abc123"},
             {"row_id": 2, "table": "users", "content": "name: bob", "hash": "def456"},
-        ]
+        ])
         mock_embed.return_value = [[0.1, 0.2], [0.3, 0.4]]
         mock_vs_instance = MagicMock()
         mock_vector_store.return_value = mock_vs_instance
@@ -42,14 +42,34 @@ class TestPlugent:
         plugent = Plugent(
             groq_api_key="test_key",
             postgres_url="postgresql://localhost/testdb",
+            batch_size=1,
         )
         plugent.start()
 
-        mock_read.assert_called_once()
-        mock_embed.assert_called_once()
-        mock_vs_instance.add.assert_called()
+        mock_read.assert_called_once_with(mock_engine.return_value, max_rows=None)
+        assert mock_embed.call_count == 2
+        assert mock_vs_instance.add.call_count == 2
         mock_vs_instance.save.assert_called()
         mock_scheduler.assert_called_once()
+
+    @patch("plugent.core.create_engine")
+    @patch("plugent.core.read_all_rows")
+    @patch("plugent.core.VectorStore")
+    @patch("plugent.core.ChangeScheduler")
+    def test_start_passes_max_rows(self, mock_scheduler, mock_vector_store, mock_read, mock_engine):
+        """Test that start() forwards max_rows to the row reader."""
+        mock_read.return_value = iter([])
+        mock_vector_store.return_value = MagicMock()
+
+        plugent = Plugent(
+            groq_api_key="test_key",
+            postgres_url="postgresql://localhost/testdb",
+            max_rows=10,
+        )
+        plugent.start()
+
+        mock_read.assert_called_once_with(mock_engine.return_value, max_rows=10)
+        mock_scheduler.assert_not_called()
 
     @patch("plugent.core.retrieve")
     @patch("plugent.core.get_answer")

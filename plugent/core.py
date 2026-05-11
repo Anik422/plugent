@@ -1,5 +1,7 @@
 """Main core module for plugent."""
 
+import gc
+
 
 def _missing_dependency(name: str):
     def _raise(*args, **kwargs):
@@ -63,6 +65,8 @@ class Plugent:
         postgres_url: str,
         vector_store_path: str = "./plugent_store",
         schedule_interval: int = 60,
+        batch_size: int = 100,
+        max_rows: int = None,
     ):
         """Initialize Plugent.
 
@@ -71,11 +75,15 @@ class Plugent:
             postgres_url: PostgreSQL connection URL.
             vector_store_path: Path to save/load vector store.
             schedule_interval: Seconds between DB change checks.
+            batch_size: Rows to embed at a time.
+            max_rows: Optional per-table row limit when building the store.
         """
         self.groq_api_key = groq_api_key
         self.postgres_url = postgres_url
         self.vector_store_path = vector_store_path
         self.schedule_interval = schedule_interval
+        self.batch_size = batch_size
+        self.max_rows = max_rows
 
         self.engine = None
         self.vector_store = None
@@ -85,25 +93,58 @@ class Plugent:
         """Start plugent: connect to DB, build and save vector store, start scheduler."""
         self.engine = create_engine(self.postgres_url)
 
-        rows = read_all_rows(self.engine)
-        if not rows:
-            self.vector_store = VectorStore()
+        self.vector_store = VectorStore()
+
+        batch_rows = []
+        has_rows = False
+
+        for row in read_all_rows(self.engine, max_rows=self.max_rows):
+            has_rows = True
+            batch_rows.append(row)
+
+            if len(batch_rows) < self.batch_size:
+                continue
+
+            batch_texts = [r["content"] for r in batch_rows]
+            batch_vectors = embed_texts(batch_texts, batch_size=self.batch_size)
+            metadata_list = [
+                {
+                    "id": r["row_id"],
+                    "table": r["table"],
+                    "hash": r["hash"],
+                    "content": r["content"],
+                }
+                for r in batch_rows
+            ]
+            self.vector_store.add(batch_vectors, metadata_list)
+            del batch_texts
+            del batch_vectors
+            del metadata_list
+            batch_rows.clear()
+            gc.collect()
+
+        if batch_rows:
+            batch_texts = [r["content"] for r in batch_rows]
+            batch_vectors = embed_texts(batch_texts, batch_size=self.batch_size)
+            metadata_list = [
+                {
+                    "id": r["row_id"],
+                    "table": r["table"],
+                    "hash": r["hash"],
+                    "content": r["content"],
+                }
+                for r in batch_rows
+            ]
+            self.vector_store.add(batch_vectors, metadata_list)
+            del batch_texts
+            del batch_vectors
+            del metadata_list
+            batch_rows.clear()
+            gc.collect()
+
+        if not has_rows:
             return
 
-        contents = [r["content"] for r in rows]
-        vectors = embed_texts(contents)
-
-        self.vector_store = VectorStore()
-        metadata_list = [
-            {
-                "id": r["row_id"],
-                "table": r["table"],
-                "hash": r["hash"],
-                "content": r["content"],
-            }
-            for r in rows
-        ]
-        self.vector_store.add(vectors, metadata_list)
         self.vector_store.save(self.vector_store_path)
 
         self.scheduler = ChangeScheduler(
