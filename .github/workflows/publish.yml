@@ -40,21 +40,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install build tools
-        run: pip install build twine toml
-
-      - name: Bump version
-        run: |
-          python -c "
-          import toml
-          with open('pyproject.toml', 'r') as f:
-              data = toml.load(f)
-          ver = data['project']['version']
-          new_ver = f'{ver}.post${{ github.run_number }}'
-          data['project']['version'] = new_ver
-          with open('pyproject.toml', 'w') as f:
-              toml.dump(data, f)
-          print(f'Bumped version: {ver} -> {new_ver}')
-          "
+        run: pip install build twine
 
       - name: Build package
         run: python -m build
