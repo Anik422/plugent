@@ -28,7 +28,7 @@ class TestPlugent:
     @patch("plugent.core.VectorStore")
     @patch("plugent.core.ChangeScheduler")
     def test_start_calls_db_and_embedder(
-        self, mock_scheduler, mock_vector_store, mock_embed, mock_read
+        self, mock_engine, mock_read, mock_embed, mock_vector_store, mock_scheduler
     ):
         """Test that start() calls db_reader and embedder functions."""
         mock_read.return_value = [
