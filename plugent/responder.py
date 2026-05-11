@@ -8,7 +8,12 @@ the provided context. If the answer is not in the context, say
 'I don't have information about that.'"""
 
 
-def get_answer(question: str, context_chunks: list[str], groq_api_key: str) -> str:
+def get_answer(
+    question: str,
+    context_chunks: list[str],
+    groq_api_key: str,
+    model: str,
+) -> str:
     """Generate an answer using Groq LLM.
 
     Args:
@@ -19,6 +24,9 @@ def get_answer(question: str, context_chunks: list[str], groq_api_key: str) -> s
     Returns:
         Generated answer string.
     """
+    if not model:
+        raise ValueError("A model must be provided to generate an answer.")
+
     client = Groq(api_key=groq_api_key)
 
     context_text = "\n".join(f"{i+1}. {chunk}" for i, chunk in enumerate(context_chunks))
@@ -26,7 +34,7 @@ def get_answer(question: str, context_chunks: list[str], groq_api_key: str) -> s
     user_message = f"Context:\n{context_text}\n\nQuestion: {question}"
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -46,4 +54,13 @@ class Responder:
 
     def respond(self, prompt: str, context: str = None):
         """Generate a response."""
-        raise NotImplementedError
+        if not self.model:
+            raise ValueError("No model provided. Please set a model before calling respond().")
+
+        context_chunks = [context] if context is not None else []
+        return get_answer(
+            question=prompt,
+            context_chunks=context_chunks,
+            groq_api_key=self.api_key,
+            model=self.model,
+        )

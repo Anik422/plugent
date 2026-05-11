@@ -62,6 +62,7 @@ class Plugent:
     def __init__(
         self,
         groq_api_key: str,
+        model: str,
         postgres_url: str,
         vector_store_path: str = "./plugent_store",
         schedule_interval: int = 60,
@@ -79,6 +80,7 @@ class Plugent:
             max_rows: Optional per-table row limit when building the store.
         """
         self.groq_api_key = groq_api_key
+        self.model = model
         self.postgres_url = postgres_url
         self.vector_store_path = vector_store_path
         self.schedule_interval = schedule_interval
@@ -178,11 +180,11 @@ class Plugent:
 
         if not context_chunks:
             return "I don't have information about that."
-
         answer = get_answer(
             question=question,
             context_chunks=context_chunks,
             groq_api_key=self.groq_api_key,
+            model=self.model,
         )
         return answer
 
